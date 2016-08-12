@@ -71,7 +71,7 @@ total = 0
 rows = 1000
 trainiterations = int(rows / batch_size)
 
-saver.restore(sess, "/users/adamcomer/PycharmProjects/Seq Data/Models/model.ckpt-4")
+#saver.restore(sess, "/users/adamcomer/PycharmProjects/Seq Data/Models/model.ckpt-4")
 
 logloss = -1.0
 
