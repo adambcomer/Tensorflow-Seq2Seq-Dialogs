@@ -35,6 +35,10 @@ labels = tf.pack(col2)
 
 features, labels = tf.train.batch([features, labels], batch_size, num_threads=4)
 
+# x1 = tf.split(0, 1, x)
+# y = tf.split(0, 1, y)
+# targets = tf.split(0, 1, targets)
+
 teminp = []
 temoutput = []
 temtarget = []
@@ -72,7 +76,7 @@ total = 0
 rows = 1000
 trainiterations = int(rows / batch_size)
 
-#saver.restore(sess, "/users/adamcomer/PycharmProjects/Seq Data/Models/model.ckpt-4")
+saver.restore(sess, "/users/adamcomer/PycharmProjects/Seq Data/Models/model.ckpt-4")
 
 logloss = -1.0
 
@@ -120,8 +124,21 @@ for j in range(0, 1000):
         databatch = np.array(databatch)
         labelsbatch = np.array(labelsbatch)
         tbatch = np.array(tbatch)
+        #print(databatch.shape)
+        #print(labelsbatch.shape)
+        #print(tbatch.shape)
 
         sess.run(train, feed_dict={x: databatch, y: labelsbatch, targets: tbatch})
+        tempout = np.array(sess.run(rnn, feed_dict={x: databatch, y: labelsbatch, targets: tbatch}))
+        #print(tempout.shape)
+        # tempdata = []
+        # numtempdata = []
+        # for word in tempout:
+        #     tempdata.append(rvsdictionary[np.argmax(word)])
+        #     numtempdata.append(np.argmax(word))
+        # tempdata = [item for item in tempdata if item != 'NULL']
+        # print(tempdata)
+
         print("Time: " + str((time.time() * 1000) - cutime) + " Batch: " + str(i) + " Iteration: " + str(j) + " Loss: " + str(logloss))
 
     for i in range(trainiterations):
