@@ -35,10 +35,6 @@ labels = tf.pack(col2)
 
 features, labels = tf.train.batch([features, labels], batch_size, num_threads=4)
 
-# x1 = tf.split(0, 1, x)
-# y = tf.split(0, 1, y)
-# targets = tf.split(0, 1, targets)
-
 teminp = []
 temoutput = []
 temtarget = []
@@ -54,7 +50,6 @@ for j in range(seq_size):
     W1_0.append(W1[:, j])
 
 cell1 = tf.nn.rnn_cell.GRUCell(64)
-#droplayer = tf.nn.rnn_cell.DropoutWrapper(cell1, input_keep_prob=drop, output_keep_prob=drop)
 cell = tf.nn.rnn_cell.MultiRNNCell([cell1] * 2)
 
 rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100, feed_previous=True)
@@ -124,20 +119,8 @@ for j in range(0, 1000):
         databatch = np.array(databatch)
         labelsbatch = np.array(labelsbatch)
         tbatch = np.array(tbatch)
-        #print(databatch.shape)
-        #print(labelsbatch.shape)
-        #print(tbatch.shape)
 
         sess.run(train, feed_dict={x: databatch, y: labelsbatch, targets: tbatch})
-        tempout = np.array(sess.run(rnn, feed_dict={x: databatch, y: labelsbatch, targets: tbatch}))
-        #print(tempout.shape)
-        # tempdata = []
-        # numtempdata = []
-        # for word in tempout:
-        #     tempdata.append(rvsdictionary[np.argmax(word)])
-        #     numtempdata.append(np.argmax(word))
-        # tempdata = [item for item in tempdata if item != 'NULL']
-        # print(tempdata)
 
         print("Time: " + str((time.time() * 1000) - cutime) + " Batch: " + str(i) + " Iteration: " + str(j) + " Loss: " + str(logloss))
 
