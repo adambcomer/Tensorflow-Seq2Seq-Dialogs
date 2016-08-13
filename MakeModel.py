@@ -71,8 +71,6 @@ def make_model(path, seq_size, units, layers, trainiterations, batch_size, resto
     if restore:
         saver.restore(sess, str(path) + "model.ckpt")
 
-    losses = []
-
     for i in range(trainiterations):
         cutime = time.time() * 1000
         data, outputs = sess.run([features, labels])
@@ -112,9 +110,6 @@ def make_model(path, seq_size, units, layers, trainiterations, batch_size, resto
 
         sess.run(train, feed_dict={x: databatch, y: labelsbatch, targets: tbatch})
         loss = sess.run(logits, feed_dict={x: databatch, y: labelsbatch, targets: tbatch})
-
-        losses.append(np.array([i, loss]))
-        np.savetxt(str(path) + "LogLoss.csv", np.array(losses), delimiter=",")
 
         print("Time: " + str((time.time() * 1000) - cutime) + " Batch: " + str(i) + " Iteration: " + str(j) + " Loss: " + str(loss))
 
