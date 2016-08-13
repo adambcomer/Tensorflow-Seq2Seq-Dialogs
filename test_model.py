@@ -3,6 +3,7 @@ import numpy as np
 import time
 import re
 from itertools import izip
+
 batch_size = 32
 seq_size = 75
 x = tf.placeholder(tf.int32, shape=[None, None])

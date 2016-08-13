@@ -3,6 +3,9 @@
 
 Takes dialog data and trains a model to make responses for a conversation input.
 
+### Dependencies 
+* **Tensorflow**
+
 ### Data format
 Data must be formated as *input text,output text* for each exchange. File must be named \[dialogs.csv\]. **note: no space between the input text or ouput text in relation to the comma.**
 
