@@ -53,7 +53,7 @@ def make_model(path, seq_size, units, layers, trainiterations, batch_size, resto
     cell1 = tf.nn.rnn_cell.GRUCell(units)
     cell = tf.nn.rnn_cell.MultiRNNCell([cell1] * layers)
 
-    rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100, feed_previous=False)
+    rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100)
 
     logits = tf.nn.seq2seq.sequence_loss(rnn, temtarget, W1_0)
 
