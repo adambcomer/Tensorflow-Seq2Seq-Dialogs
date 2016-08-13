@@ -1,4 +1,4 @@
-# Tensorflow-Seq2Seq-Conversation
+# Tensorflow Seq2Seq Conversation
 ### Build conversation Seq2Seq models with TensorFlow
 
 Takes dialog data and trains a model to make responses for a conversation input.
