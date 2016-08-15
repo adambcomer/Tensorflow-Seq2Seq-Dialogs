@@ -1,86 +1,53 @@
 import tensorflow as tf
 import numpy as np
-import time
 import re
+import argparse
 from itertools import izip
 
-batch_size = 32
-seq_size = 75
-x = tf.placeholder(tf.int32, shape=[None, None])
-y = tf.placeholder(tf.int32, shape=[None, None])
-targets = tf.placeholder(tf.int32, shape=[None, None])
-drop = tf.placeholder("float")
 
-dictionary = np.loadtxt("/Users/adamcomer/PycharmProjects/TensorflowSeq/dictionary.csv", delimiter=" ", dtype="string", skiprows=0)
-dictsize = dictionary.shape[0]
+def test_model(path, seq_size, units, layers):
+    x = tf.placeholder(tf.int32, shape=[None, None])
+    y = tf.placeholder(tf.int32, shape=[None, None])
+    targets = tf.placeholder(tf.int32, shape=[None, None])
 
-count = []
+    dictionary = np.loadtxt(str(path) + "dictionary.csv", delimiter=" ", dtype="string", skiprows=0)
+    dictsize = dictionary.shape[0]
 
-for i in range(dictsize):
-    count.append(i)
+    count = []
 
-dictionary = dict(izip(list(dictionary), count))
-rvsdictionary = dict(izip(dictionary.values(), dictionary.keys()))
-print(dictionary)
+    for i in range(dictsize):
+        count.append(i)
 
-filename_queue = tf.train.string_input_producer(["/Users/adamcomer/PycharmProjects/TensorflowSeq/reviewed_dialogs.csv"])
+    dictionary = dict(izip(list(dictionary), count))
+    rvsdictionary = dict(izip(dictionary.values(), dictionary.keys()))
+    print(dictionary)
 
-reader = tf.TextLineReader()
-key, value = reader.read(filename_queue)
+    teminp = []
+    temoutput = []
+    temtarget = []
 
-record_defaults = [[""], [""]]
-col1, col2 = tf.decode_csv(value, record_defaults=record_defaults)
+    for o in range(seq_size):
+        teminp.append(x[:, o])
+        temoutput.append(y[:, o])
+        temtarget.append(targets[:, o])
 
-features = tf.pack(col1)
-labels = tf.pack(col2)
+    cell1 = tf.nn.rnn_cell.GRUCell(units)
+    cell = tf.nn.rnn_cell.MultiRNNCell([cell1] * layers)
 
-teminp = []
-temoutput = []
-temtarget = []
+    rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100, feed_previous=True)
 
-for o in range(seq_size):
-    teminp.append(x[:, o])
-    temoutput.append(y[:, o])
-    temtarget.append(targets[:, o])
+    saver = tf.train.Saver()
 
-W1 = tf.Variable(tf.truncated_normal([batch_size, seq_size], stddev=0.1))
-W1_0 = []
-for j in range(seq_size):
-    W1_0.append(W1[:, j])
+    init_op = tf.initialize_all_variables()
+    sess = tf.InteractiveSession()
+    sess.run(init_op)
 
-cell1 = tf.nn.rnn_cell.GRUCell(64)
-#droplayer = tf.nn.rnn_cell.DropoutWrapper(cell1, input_keep_prob=drop, output_keep_prob=drop)
-cell = tf.nn.rnn_cell.MultiRNNCell([cell1] * 2)
+    coord = tf.train.Coordinator()
+    threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100, feed_previous=True)
+    saver.restore(sess, str(path) + "model.ckpt")
 
-logits = tf.nn.seq2seq.sequence_loss(rnn, temtarget, W1_0)
-
-train = tf.train.AdagradOptimizer(0.1).minimize(logits)
-
-saver = tf.train.Saver()
-
-init_op = tf.initialize_all_variables()
-sess = tf.InteractiveSession()
-sess.run(init_op)
-
-coord = tf.train.Coordinator()
-threads = tf.train.start_queue_runners(sess=sess, coord=coord)
-
-total = 0
-rows = 1000
-trainiterations = int(rows / batch_size)
-
-saver.restore(sess, "/users/adamcomer/PycharmProjects/TensorflowSeq/Models/model.ckpt-4")
-
-logloss = -1.0
-
-loss = []
-
-for j in range(0, 1000):
-    for i in range(trainiterations):
-        cutime = time.time() * 1000
-        # data, outputs = sess.run([features, labels])
+    while True:
         outputs = ""
         data = raw_input("> ")
 
@@ -89,20 +56,18 @@ for j in range(0, 1000):
 
         databatch = []
 
-        print(data)
-
         for line in data:
-            print(line[0])
             data = re.split("\s", line[0])
-            #print(data)
             tempdata = []
             for word in data:
                 if word != '':
-                    tempdata.append(dictionary[word])
+                    if dictionary.get(word) is not None:
+                        tempdata.append(dictionary[word])
+                    else:
+                        tempdata.append(dictionary["NULL"])
             for p in range(seq_size - len(tempdata)):
                 tempdata.append(dictionary["NULL"])
             tempdata.reverse()
-            #print(tempdata)
             databatch.append(tempdata)
 
         labelsbatch = []
@@ -117,10 +82,8 @@ for j in range(0, 1000):
                     tempoutputs.append(dictionary[word])
             for p in range(seq_size - len(tempoutputs)):
                 tempoutputs.append(dictionary["NULL"])
-            #print(tempoutputs)
             t = [tempoutputs[k + 1] for k in range(len(tempoutputs) - 1)]
             t = np.append(np.array(t), dictionary["NULL"])
-            #print(t)
             labelsbatch.append(tempoutputs)
             tbatch.append(t)
 
@@ -129,24 +92,23 @@ for j in range(0, 1000):
         tbatch = np.array(tbatch)
 
         tempout = np.array(sess.run(rnn, feed_dict={x: databatch, y: labelsbatch, targets: tbatch}))
-        print(tempout.shape)
         tempdata = []
         numtempdata = []
         for word in tempout:
             tempdata.append(rvsdictionary[np.argmax(word)])
             numtempdata.append(np.argmax(word))
         tempdata = [item for item in tempdata if item != 'NULL']
-        print(tempdata)
+        print(' '.join(tempdata))
 
-        #print("Time: " + str((time.time() * 1000) - cutime) + " Batch: " + str(i) + " Iteration: " + str(j) + " Loss: " + str(logloss))
+    coord.request_stop()
+    coord.join(threads)
 
-    print("Loss: " + str((total / (trainiterations * batch_size))))
-    logloss = (total / (trainiterations * batch_size))
-    saver.save(sess, "/Users/adamcomer/PycharmProjects/TensorflowSeq/Models/model.ckpt", global_step=j)
-    total = 0
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("dialog_path", type=str, help="path to the dialog csv ex: \"/user/dialog_folder/\"")
+    parser.add_argument("units", type=int, help="number of units in a GRU layer")
+    parser.add_argument("layers", type=int, help="number of GRU layers")
+    parser.add_argument("seq_size", type=int, help="number words in the response sequence")
+    args = parser.parse_args()
 
-    loss.append(np.array([j, logloss]))
-    np.savetxt("/Users/adamcomer/PycharmProjects/TensorflowSeq/LogLoss.csv", np.array(loss), delimiter=",")
-
-coord.request_stop()
-coord.join(threads)
+    test_model(args.dialog_path, args.seq_size, args.units, args.layers)

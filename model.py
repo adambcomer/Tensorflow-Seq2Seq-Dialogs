@@ -6,7 +6,7 @@ from itertools import izip
 import argparse
 
 
-def make_model(path, seq_size, units, layers, trainiterations, batch_size, restore=False):
+def make_model(path, seq_size, units, layers, trainiterations, batch_size, dloss, dout, restore=False):
 
     x = tf.placeholder(tf.int32, shape=[None, None])
     y = tf.placeholder(tf.int32, shape=[None, None])
@@ -21,6 +21,7 @@ def make_model(path, seq_size, units, layers, trainiterations, batch_size, resto
         count.append(i)
 
     dictionary = dict(izip(list(dictionary), count))
+    rvsdictionary = dict(izip(dictionary.values(), dictionary.keys()))
     print(dictionary)
 
     filename_queue = tf.train.string_input_producer([str(path) + "dialogs.csv"])
@@ -45,7 +46,7 @@ def make_model(path, seq_size, units, layers, trainiterations, batch_size, resto
         temoutput.append(y[:, o])
         temtarget.append(targets[:, o])
 
-    W1 = tf.Variable(tf.truncated_normal([batch_size, seq_size], stddev=0.1))
+    W1 = tf.placeholder(tf.float32, shape=[batch_size, seq_size])
     W1_0 = []
     for j in range(seq_size):
         W1_0.append(W1[:, j])
@@ -108,10 +109,27 @@ def make_model(path, seq_size, units, layers, trainiterations, batch_size, resto
         labelsbatch = np.array(labelsbatch)
         tbatch = np.array(tbatch)
 
-        sess.run(train, feed_dict={x: databatch, y: labelsbatch, targets: tbatch})
-        loss = sess.run(logits, feed_dict={x: databatch, y: labelsbatch, targets: tbatch})
+        sess.run(train, feed_dict={x: databatch, y: labelsbatch, targets: tbatch, W1: np.ones([batch_size, seq_size], dtype=np.float32)})
 
-        print("Time: " + str((time.time() * 1000) - cutime) + " Batch: " + str(i) + " Iteration: " + str(j) + " Loss: " + str(loss))
+        if dout:
+            tempout = sess.run(rnn, feed_dict={x: databatch, y: labelsbatch})
+            tempdata = np.split(np.array(tempout), batch_size, 1)
+
+            data = []
+            for sent in tempdata:
+                temdata = []
+
+                for word in sent:
+                    temdata.append(rvsdictionary[np.argmax(word)])
+                temdata = [item for item in temdata if item != 'NULL']
+                data.append(temdata)
+            print(data)
+
+        if dloss:
+            loss = sess.run(logits, feed_dict={x: databatch, y: labelsbatch, targets: tbatch, W1: np.ones([batch_size, seq_size], dtype=np.float32)})
+            print("Time: " + str((time.time() * 1000) - cutime) + " Iteration: " + str(i) + " Loss: " + str(loss))
+        else:
+            print("Time: " + str((time.time() * 1000) - cutime) + " Iteration: " + str(i))
 
     saver.save(sess, str(path) + "model.ckpt")
 
@@ -192,11 +210,13 @@ if __name__ == "__main__":
     parser.add_argument("train_iterations", type=int, help="number of training iterations")
     parser.add_argument("batch_size", type=int, help="number of units in a batch")
     parser.add_argument("--restore", help="if you want to restore from a old model", action="store_true")
+    parser.add_argument("--display_out", help="if you want to see the outputs from training", action="store_true")
+    parser.add_argument("--display_loss", help="if you want to see the loss from training", action="store_true")
     args = parser.parse_args()
 
     length = create_dictionary(args.dialog_path)
 
     if args.restore:
-        make_model(args.dialog_path, length + 1, args.units, args.layers, args.train_iterations, args.batch_size, restore=args.restore)
+        make_model(args.dialog_path, length + 1, args.units, args.layers, args.train_iterations, args.batch_size, args.display_loss, args.display_out, restore=args.restore)
     else:
-        make_model(args.dialog_path, length + 1, args.units, args.layers, args.train_iterations, args.batch_size)
+        make_model(args.dialog_path, length + 1, args.units, args.layers, args.train_iterations, args.batch_size, args.display_loss, args.display_out)
