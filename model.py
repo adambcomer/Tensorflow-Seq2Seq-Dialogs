@@ -6,23 +6,14 @@ from itertools import izip
 import argparse
 
 
-def make_model(path, seq_size, units, layers, trainiterations, batch_size, dloss, dout, restore=False):
+def train_model(path, seq_size, units, layers, trainiterations, batch_size, dloss, dout, dictionary, restore=False):
 
     x = tf.placeholder(tf.int32, shape=[None, None])
     y = tf.placeholder(tf.int32, shape=[None, None])
     targets = tf.placeholder(tf.int32, shape=[None, None])
 
-    dictionary = np.loadtxt(str(path) + "dictionary.csv", delimiter=" ", dtype="string", skiprows=0)
-    dictsize = dictionary.shape[0]
-
-    count = []
-
-    for i in range(dictsize):
-        count.append(i)
-
-    dictionary = dict(izip(list(dictionary), count))
     rvsdictionary = dict(izip(dictionary.values(), dictionary.keys()))
-    print(dictionary)
+    dictsize = len(dictionary)
 
     filename_queue = tf.train.string_input_producer([str(path) + "dialogs.csv"])
 
@@ -191,16 +182,21 @@ def create_dictionary(path):
 
             if len(words) > maxlen:
                 maxlen = len(words)
-                print(words)
-
     dictionary = dictionary.union(tempdict)
-    print("Number of words in dictionary: " + str(len(dictionary)))
-    print("Max Length: " + str(maxlen))
-    print("Number of lines: " + str(csv.shape[0]))
 
-    np.savetxt(str(path) + "dictionary.csv", np.array(list(dictionary)), delimiter=",", fmt="%s")
-    print("Dictionary CSV is saved")
-    return int(maxlen)
+    dictsize = len(dictionary)
+
+    count = []
+
+    for i in range(dictsize):
+        count.append(i)
+
+    dictionary = dict(izip(list(dictionary), count))
+    # print("Number of words in dictionary: " + str(len(dictionary)))
+    # print("Max Length: " + str(maxlen))
+    # print("Number of lines: " + str(csv.shape[0]))
+
+    return int(maxlen), dictionary
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -214,9 +210,9 @@ if __name__ == "__main__":
     parser.add_argument("--display_loss", help="if you want to see the loss from training", action="store_true")
     args = parser.parse_args()
 
-    length = create_dictionary(args.dialog_path)
+    length, dictionary = create_dictionary(args.dialog_path)
 
     if args.restore:
-        make_model(args.dialog_path, length + 1, args.units, args.layers, args.train_iterations, args.batch_size, args.display_loss, args.display_out, restore=args.restore)
+        train_model(args.dialog_path, length + 1, args.units, args.layers, args.train_iterations, args.batch_size, args.display_loss, args.display_out, dictionary, restore=args.restore)
     else:
-        make_model(args.dialog_path, length + 1, args.units, args.layers, args.train_iterations, args.batch_size, args.display_loss, args.display_out)
+        train_model(args.dialog_path, length + 1, args.units, args.layers, args.train_iterations, args.batch_size, args.display_loss, args.display_out, dictionary)

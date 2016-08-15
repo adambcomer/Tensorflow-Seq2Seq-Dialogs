@@ -1,26 +1,24 @@
-import tensorflow as tf
-import numpy as np
-import re
 import argparse
+import re
 from itertools import izip
+import numpy as np
+import tensorflow as tf
+from model import create_dictionary
 
 
-def test_model(path, seq_size, units, layers):
+def test_model(path, seq_size, units, layers, dictionary):
     x = tf.placeholder(tf.int32, shape=[None, None])
     y = tf.placeholder(tf.int32, shape=[None, None])
     targets = tf.placeholder(tf.int32, shape=[None, None])
 
-    dictionary = np.loadtxt(str(path) + "dictionary.csv", delimiter=" ", dtype="string", skiprows=0)
-    dictsize = dictionary.shape[0]
+    dictsize = len(dictionary)
 
     count = []
 
     for i in range(dictsize):
         count.append(i)
 
-    dictionary = dict(izip(list(dictionary), count))
     rvsdictionary = dict(izip(dictionary.values(), dictionary.keys()))
-    print(dictionary)
 
     teminp = []
     temoutput = []
@@ -108,7 +106,8 @@ if __name__ == "__main__":
     parser.add_argument("dialog_path", type=str, help="path to the dialog csv ex: \"/user/dialog_folder/\"")
     parser.add_argument("units", type=int, help="number of units in a GRU layer")
     parser.add_argument("layers", type=int, help="number of GRU layers")
-    parser.add_argument("seq_size", type=int, help="number words in the response sequence")
     args = parser.parse_args()
 
-    test_model(args.dialog_path, args.seq_size, args.units, args.layers)
+    maxlength, dictionary = create_dictionary(args.dialog_path)
+
+    test_model(args.dialog_path, maxlength, args.units, args.layers, dictionary)
