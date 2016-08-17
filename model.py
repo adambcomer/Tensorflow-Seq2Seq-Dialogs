@@ -122,6 +122,10 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
         else:
             print("Time: " + str((time.time() * 1000) - cutime) + " Iteration: " + str(i))
 
+        if i % 100 == 0:
+            saver.save(sess, str(path) + "model.ckpt")
+            print("Code Saved")
+
     saver.save(sess, str(path) + "model.ckpt")
 
     coord.request_stop()
