@@ -26,7 +26,7 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
     features = tf.pack(col1)
     labels = tf.pack(col2)
 
-    features, labels = tf.train.batch([features, labels], batch_size, num_threads=4)
+    features, labels = tf.train.shuffle_batch([features, labels], batch_size, capacity=10000, min_after_dequeue=5000, num_threads=4)
 
     teminp = []
     temoutput = []
@@ -122,9 +122,9 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
         else:
             print("Time: " + str((time.time() * 1000) - cutime) + " Iteration: " + str(i))
 
-        if i % 100 == 0:
+        if i % 100 == 0 and i is not 0:
             saver.save(sess, str(path) + "model.ckpt")
-            print("Code Saved")
+            print("Model Saved")
 
     saver.save(sess, str(path) + "model.ckpt")
 
