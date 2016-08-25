@@ -11,6 +11,7 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
     x = tf.placeholder(tf.int32, shape=[None, None])
     y = tf.placeholder(tf.int32, shape=[None, None])
     targets = tf.placeholder(tf.int32, shape=[None, None])
+    keep = tf.placeholder(tf.float32)
 
     rvsdictionary = dict(izip(dictionary.values(), dictionary.keys()))
     dictsize = len(dictionary)
@@ -43,9 +44,10 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
         W1_0.append(W1[:, j])
 
     cell1 = tf.nn.rnn_cell.GRUCell(units)
-    cell = tf.nn.rnn_cell.MultiRNNCell([cell1] * layers)
+    drop = tf.nn.rnn_cell.DropoutWrapper(cell1, input_keep_prob=keep, output_keep_prob=keep)
+    cell = tf.nn.rnn_cell.MultiRNNCell([drop] * layers)
 
-    rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100)
+    rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100, feed_previous=True)
 
     logits = tf.nn.seq2seq.sequence_loss(rnn, temtarget, W1_0)
 
@@ -100,10 +102,10 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
         labelsbatch = np.array(labelsbatch)
         tbatch = np.array(tbatch)
 
-        sess.run(train, feed_dict={x: databatch, y: labelsbatch, targets: tbatch, W1: np.ones([batch_size, seq_size], dtype=np.float32)})
+        sess.run(train, feed_dict={x: databatch, y: labelsbatch, targets: tbatch, W1: np.ones([batch_size, seq_size], dtype=np.float32), keep: 0.5})
 
         if dout:
-            tempout = sess.run(rnn, feed_dict={x: databatch, y: labelsbatch})
+            tempout = sess.run(rnn, feed_dict={x: databatch, y: labelsbatch, keep: 1.0})
             tempdata = np.split(np.array(tempout), batch_size, 1)
 
             data = []
@@ -117,7 +119,7 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
             print(data)
 
         if dloss:
-            loss = sess.run(logits, feed_dict={x: databatch, y: labelsbatch, targets: tbatch, W1: np.ones([batch_size, seq_size], dtype=np.float32)})
+            loss = sess.run(logits, feed_dict={x: databatch, y: labelsbatch, targets: tbatch, W1: np.ones([batch_size, seq_size], dtype=np.float32), keep: 1.0})
             print("Time: " + str((time.time() * 1000) - cutime) + " Iteration: " + str(i) + " Loss: " + str(loss))
         else:
             print("Time: " + str((time.time() * 1000) - cutime) + " Iteration: " + str(i))
