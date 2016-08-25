@@ -1,3 +1,5 @@
+# Copyright 2016 Adam Comer. All rights reserved. For public use only.
+
 import tensorflow as tf
 import numpy as np
 import time

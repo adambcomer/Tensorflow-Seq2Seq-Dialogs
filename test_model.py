@@ -1,3 +1,5 @@
+# Copyright 2016 Adam Comer. All rights reserved. For public use only.
+
 import argparse
 import re
 from itertools import izip
