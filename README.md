@@ -10,7 +10,7 @@ Takes dialog data and trains a model to make responses for a conversation input.
 Data must be formated as *input text,output text* for each exchange. File must be named \[dialogs.csv\]. **note: no space between the input text or ouput text in relation to the comma.**
 
 ### Make Model
-model.py will make make a Seq2Seq model in TensorFlow to best approximate a correct response for an input.
+train.py will make make a Seq2Seq model in TensorFlow to best approximate a correct response for an input.
 
 ### Test Model
-test_model.py allows you to test your model made by model.py with your own inputs 
+test.py allows you to test your model made by model.py with your own inputs 

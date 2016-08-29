@@ -5,7 +5,7 @@ import re
 from itertools import izip
 import numpy as np
 import tensorflow as tf
-from model import create_dictionary
+from train import create_dictionary
 
 
 def test_model(path, seq_size, units, layers, dictionary):
