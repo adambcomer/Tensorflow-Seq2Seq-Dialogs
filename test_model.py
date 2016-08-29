@@ -14,12 +14,6 @@ def test_model(path, seq_size, units, layers, dictionary):
     targets = tf.placeholder(tf.int32, shape=[None, None])
 
     dictsize = len(dictionary)
-
-    count = []
-
-    for i in range(dictsize):
-        count.append(i)
-
     rvsdictionary = dict(izip(dictionary.values(), dictionary.keys()))
 
     teminp = []

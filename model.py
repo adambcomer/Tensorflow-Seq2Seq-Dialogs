@@ -1,11 +1,13 @@
 # Copyright 2016 Adam Comer. All rights reserved. For public use only.
 
 import tensorflow as tf
+from tensorflow.python.ops import array_ops
 import numpy as np
 import time
 import re
 from itertools import izip
 import argparse
+import seq2seq_gpu
 
 
 def train_model(path, seq_size, units, layers, trainiterations, batch_size, dloss, dout, dictionary, restore=False):
@@ -49,7 +51,9 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
     drop = tf.nn.rnn_cell.DropoutWrapper(cell1, input_keep_prob=keep, output_keep_prob=keep)
     cell = tf.nn.rnn_cell.MultiRNNCell([drop] * layers)
 
-    rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100, feed_previous=True)
+    rnn, state = seq2seq_gpu.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100, feed_previous=False)
+
+    #rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100, feed_previous=True)
 
     logits = tf.nn.seq2seq.sequence_loss(rnn, temtarget, W1_0)
 
