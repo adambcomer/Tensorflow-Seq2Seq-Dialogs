@@ -1,7 +1,7 @@
-# Copyright 2016 Adam Comer. All rights reserved. For public use only.
+# Adam Comer
+# MIT Licence
 
 import tensorflow as tf
-from tensorflow.python.ops import array_ops
 import numpy as np
 import time
 import re
@@ -53,16 +53,17 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
 
     rnn, state = seq2seq_gpu.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100, feed_previous=False)
 
-    #rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100, feed_previous=True)
-
     logits = tf.nn.seq2seq.sequence_loss(rnn, temtarget, W1_0)
 
     train = tf.train.AdagradOptimizer(0.1).minimize(logits)
 
     saver = tf.train.Saver()
 
+    config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
+
     init_op = tf.initialize_all_variables()
-    sess = tf.InteractiveSession()
+    sess = tf.InteractiveSession(config=config)
     sess.run(init_op)
 
     coord = tf.train.Coordinator()
@@ -83,8 +84,10 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
             data = re.split("\s", line)
             tempdata = []
             for word in data:
-                if word != '':
+                if dictionary.get(word) is not None:
                     tempdata.append(dictionary[word])
+                else:
+                    tempdata.append(dictionary["UKN"])
             for p in range(seq_size - len(tempdata)):
                 tempdata.append(dictionary["NULL"])
             tempdata.reverse()
@@ -95,7 +98,7 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
             outputs.insert(0, "GO")
             tempoutputs = []
             for word in outputs:
-                if word != '':
+                if dictionary.get(word) is not None:
                     tempoutputs.append(dictionary[word])
             for p in range(seq_size - len(tempoutputs)):
                 tempoutputs.append(dictionary["NULL"])
@@ -130,7 +133,7 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
         else:
             print("Time: " + str((time.time() * 1000) - cutime) + " Iteration: " + str(i))
 
-        if i % 100 == 0 and i is not 0:
+        if i % 10000 == 0 and i is not 0:
             saver.save(sess, str(path) + "model.ckpt")
             print("Model Saved")
 
@@ -140,12 +143,12 @@ def train_model(path, seq_size, units, layers, trainiterations, batch_size, dlos
     coord.join(threads)
 
 
-def create_dictionary(path):
+def create_dictionary(path, load):
 
     csv = np.loadtxt(str(path) + "dialogs.csv", delimiter=",", dtype="string", skiprows=0)
 
     tempdict = []
-    dictionary = set(["NULL", "GO"])
+    dictionary = {"temp"}
 
     maxlen = 0
     for row in csv:
@@ -186,15 +189,29 @@ def create_dictionary(path):
             lines = lines.replace("\\", "")
             lines = lines.replace("<", "")
             lines = lines.replace(">", "")
+            lines = lines.replace("`", "'")
+            lines = lines.replace("~", "")
             lines = [item for item in lines if not item.isdigit()]
             line = ''.join(lines).strip()
 
-            words = re.split(" ", line)
+            words = re.split("\s", line)
             tempdict.extend(words)
 
             if len(words) > maxlen:
                 maxlen = len(words)
-    dictionary = dictionary.union(tempdict)
+
+    if not load:
+        tempdictionary = dictionary.union(tempdict)
+        dictionary = ["NULL", "GO", "UKN"]
+
+        # Creates a dictionary THIS CAN TAKE A FEW HOURS!
+        for item in tempdictionary:
+            if tempdict.count(item) >= 50: # Change this number to raise or lower the word frequency minimum counter
+                dictionary.append(item)
+
+        np.savetxt(str(path) + "dictionary.csv", dictionary, fmt="%s", delimiter=",")
+    else:
+        dictionary = np.loadtxt(str(path) + "dictionary.csv", delimiter=",", dtype="string", skiprows=0)
 
     dictsize = len(dictionary)
 
@@ -204,9 +221,10 @@ def create_dictionary(path):
         count.append(i)
 
     dictionary = dict(izip(list(dictionary), count))
-    # print("Number of words in dictionary: " + str(len(dictionary)))
-    # print("Max Length: " + str(maxlen))
-    # print("Number of lines: " + str(csv.shape[0]))
+
+    print("Number of words in dictionary: " + str(len(dictionary)))
+    print("Max Length: " + str(maxlen))
+    print("Number of lines: " + str(csv.shape[0]))
 
     return int(maxlen), dictionary
 
@@ -220,9 +238,10 @@ if __name__ == "__main__":
     parser.add_argument("--restore", help="if you want to restore from a old model", action="store_true")
     parser.add_argument("--display_out", help="if you want to see the outputs from training", action="store_true")
     parser.add_argument("--display_loss", help="if you want to see the loss from training", action="store_true")
+    parser.add_argument("--load_dictionary", help="if you have a dictionary from a past training iteration", action="store_true")
     args = parser.parse_args()
 
-    length, dictionary = create_dictionary(args.dialog_path)
+    length, dictionary = create_dictionary(args.dialog_path, args.load_dictionary)
 
     if args.restore:
         train_model(args.dialog_path, length + 1, args.units, args.layers, args.train_iterations, args.batch_size, args.display_loss, args.display_out, dictionary, restore=args.restore)

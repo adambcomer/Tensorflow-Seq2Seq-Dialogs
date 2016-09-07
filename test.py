@@ -1,4 +1,5 @@
-# Copyright 2016 Adam Comer. All rights reserved. For public use only.
+# Adam Comer
+# MIT Licence
 
 import argparse
 import re
@@ -104,6 +105,6 @@ if __name__ == "__main__":
     parser.add_argument("layers", type=int, help="number of GRU layers")
     args = parser.parse_args()
 
-    maxlength, dictionary = create_dictionary(args.dialog_path)
+    maxlength, dictionary = create_dictionary(args.dialog_path, True)
 
     test_model(args.dialog_path, maxlength, args.units, args.layers, dictionary)
