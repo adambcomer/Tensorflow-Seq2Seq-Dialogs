@@ -29,7 +29,13 @@ def test_model(path, seq_size, units, layers, dictionary):
     cell1 = tf.nn.rnn_cell.GRUCell(units)
     cell = tf.nn.rnn_cell.MultiRNNCell([cell1] * layers)
 
-    rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 100, feed_previous=True)
+    w = tf.get_variable("proj_w", [units, dictsize])
+    b = tf.get_variable("proj_b", [dictsize])
+    output_projection = (w, b)
+
+    rnn, state = tf.nn.seq2seq.embedding_attention_seq2seq(teminp, temoutput, cell, dictsize, dictsize, 1000, feed_previous=True, output_projection=output_projection)
+
+    output = [tf.matmul(word, w) + b for word in rnn]
 
     saver = tf.train.Saver()
 
@@ -59,7 +65,7 @@ def test_model(path, seq_size, units, layers, dictionary):
                     if dictionary.get(word) is not None:
                         tempdata.append(dictionary[word])
                     else:
-                        tempdata.append(dictionary["NULL"])
+                        tempdata.append(dictionary["UKN"])
             for p in range(seq_size - len(tempdata)):
                 tempdata.append(dictionary["NULL"])
             tempdata.reverse()
@@ -86,7 +92,7 @@ def test_model(path, seq_size, units, layers, dictionary):
         labelsbatch = np.array(labelsbatch)
         tbatch = np.array(tbatch)
 
-        tempout = np.array(sess.run(rnn, feed_dict={x: databatch, y: labelsbatch, targets: tbatch}))
+        tempout = np.array(sess.run(output, feed_dict={x: databatch, y: labelsbatch, targets: tbatch}))
         tempdata = []
         numtempdata = []
         for word in tempout:
@@ -105,6 +111,6 @@ if __name__ == "__main__":
     parser.add_argument("layers", type=int, help="number of GRU layers")
     args = parser.parse_args()
 
-    maxlength, dictionary = create_dictionary(args.dialog_path, True)
+    _, length, dictionary = create_dictionary(args.dialog_path, True)
 
-    test_model(args.dialog_path, maxlength, args.units, args.layers, dictionary)
+    test_model(args.dialog_path, 50, args.units, args.layers, dictionary)
