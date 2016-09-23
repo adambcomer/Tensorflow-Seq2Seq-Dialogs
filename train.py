@@ -121,14 +121,10 @@ def train_model(path, in_seq_size, out_seq_size, units, layers, trainiterations,
     coord = tf.train.Coordinator()
     threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-    #print([v.name for v in tf.trainable_variables() if "embedding" in v.name])
-
     # If true will restore the model from a previous version
     if restore:
         print("Restoring Model")
         saver.restore(sess, str(path) + "model.ckpt")
-
-    #print(sess.run(tf.get_default_graph().get_tensor_by_name("embedding_attention_seq2seq/embedding_attention_decoder/embedding:0")))
 
     # Training loop
     for i in range(trainiterations):
@@ -292,12 +288,12 @@ def create_dictionary(path, load):
         dictionary = ["NULL", "GO", "UKN"]
 
         # Creates a dictionary THIS CAN TAKE A FEW HOURS!
-        # for item in tempdictionary:
-        #     if tempdict.count(item) >= 50: # Change this number to raise or lower the word frequency minimum counter
-        #         dictionary.append(item)
+        for item in tempdictionary:
+            if tempdict.count(item) >= 50: # Change this number to raise or lower the word frequency minimum counter
+                dictionary.append(item)
 
-        # Uncomment this line and comment the for loop to use all the words in the training data
-        dictionary = dictionary + list(tempdictionary)
+        # Uncomment this line and comment the loop above to use all the words in the training data
+        #dictionary = dictionary + list(tempdictionary)
 
         np.savetxt(str(path) + "dictionary.csv", dictionary, fmt="%s", delimiter=",")
 
