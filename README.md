@@ -1,12 +1,13 @@
 # Tensorflow Seq2Seq For Conversations
-### Build conversation Seq2Seq models with TensorFlow
+## Build conversation Seq2Seq models with TensorFlow
 
 Takes dialog data and trains a model to make responses for a conversation input.
 
-### Dependencies 
+## Dependencies 
 * [Tensorflow](https://github.com/tensorflow/tensorflow)
+* [Numpy](https://github.com/numpy/numpy)
 
-### Data format
+## Data format
 Data must be formated as *input text,output text* for each exchange. File must be named \[dialogs.csv\]. **note: no space between the input text or ouput text in relation to the comma.**
 
 Example data:
