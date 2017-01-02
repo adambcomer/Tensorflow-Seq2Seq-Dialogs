@@ -56,9 +56,6 @@ Example:
 This will use the model above after training. Once you run this a "> " will appear. Type in anything you want to see the output of the model. 
 
 
-## Example:
-
-Visit this webpage to see a working version. [https://www.facebook.com/adamsbot/](https://www.facebook.com/adamsbot/)
-Just send it a message. This example was trained for 2 weeks on a GTX 1060 and is only half baked. Answers can be repetitive.  
+## Notes:  
 
 FYI: To train this model you need something like a GTX TITAN X or a cluster computer and a lot of time. Not for the Deep Learning weary. 
