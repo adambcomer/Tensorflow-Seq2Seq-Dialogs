@@ -10,10 +10,10 @@ Takes dialog data and trains a model to make responses for a conversation input.
 ## Data format
 Data must be formated as *input text,output text* for each exchange. File must be named \[dialogs.csv\]. **note: no space between the input text or ouput text in relation to the comma.**
 
-Example data:
-_hi,hello
-how are you?,i'm well
-what is your name?,my name is john_
+Example data:  
+hi,hello  
+how are you?,i'm well  
+what is your name?,my name is john  
 
 Before TensorFlow builds the model we compile a dictionary of all the words in the training set to convert them to vectors. The code has a word frequency minimum by default, but you can uncomment one line to use every word in the dataset. The function is create_dictionary() near the bottom if you wish to do so.
 
